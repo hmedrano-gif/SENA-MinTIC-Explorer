@@ -5,13 +5,13 @@ import requests
 st.set_page_config(page_title="MinTIC Data Explorer Pro", layout="wide", page_icon="SEARCH")
 APP_TOKEN = "e0umakk5lo0xz8m7cfh7lccic"
 
-st.markdown(\"\"\"
+st.markdown(\"\"\
                 <style>
                 .stApp { background-color: #f8f9fa; }
     .main-title { color: #00324d; font-size: 32px; font-weight: bold; text-align: center; }
     .ai-box { background-color: #e3f2fd; padding: 15px; border-radius: 10px; border-left: 5px solid #1976d2; margin: 10px 0; }
     </style>
-    \"\"\", unsafe_allow_html=True)
+    "\"\", unsafe_allow_html=True)
 
 st.markdown(\"<div class='main-title'>SEARCH MinTIC Data Discovery & AI Mentor</div>\", unsafe_allow_html=True)
 
