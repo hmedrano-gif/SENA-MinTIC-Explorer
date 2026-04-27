@@ -45,27 +45,86 @@ class EliteMentor:
         def __init__(self):
                     self.model_name = 'gemini-1.5-flash'
 
-        def analyze_deep(self, idea, ds_name, rows, columns):
-                    model = genai.GenerativeModel(self.model_name)
-                    prompt = f"Actua como un Mentor de Datos Senior. Analiza '{idea}' con '{ds_name}'. Vars: {columns}. Registros: {rows}. JSON: problema, reto, solucion, impacto_social."
-                    try:
-                                    res = model.generate_content(prompt)
-                                    match = re.search(r'\{.*\}', res.text, re.DOTALL)
-                                    return json.loads(match.group(0)) if match else self._coach_fallback(ds_name)
-                                except:
+    def analyze_deep(self, idea, ds_name, rows, columns):
+                model = genai.GenerativeModel(self.model_name)
+                prompt = f"Actua como un Mentor de Datos Senior. Analiza '{idea}' con '{ds_name}'. Vars: {columns}. Registros: {rows}. JSON: problema, reto, solucion, impacto_social."
+                try:
+                                res = model.generate_content(prompt)
+                                match = re.search(r'\{.*\}', res.text, re.DOTALL)
+                                return json.loads(match.group(0)) if match else self._coach_fallback(ds_name)
+                            except:
             return self._coach_fallback(ds_name)
 
-        def _coach_fallback(self, name):
-                    return {
-                                    "problema": f"Fragmentacion de informacion en '{name}'.",
-                                    "reto": "Automatizar identificacion de riesgos sistemicos.",
-                                    "solucion": "Modelos de Isolation Forest y analitica avanzada.",
-                                    "impacto_social": "Transparencia institucional y beneficio ciudadano."
-                    }
+    def _coach_fallback(self, name):
+                return {
+                                "problema": f"Fragmentacion de informacion en '{name}'.",
+                                "reto": "Automatizar identificacion de riesgos sistemicos.",
+                                "solucion": "Modelos de Isolation Forest y analitica avanzada.",
+                                "impacto_social": "Transparencia institucional y beneficio ciudadano."
+                }
 
-        def get_notebook(self, ds_id, ds_name, strategy, columns):
-                    model = genai.GenerativeModel(self.model_name)
-                    prompt = f"Genera JSON de un NOTEBOOK (.ipynb) para {ds_id}. Solo JSON."
-                    try:
-                                    res = model.generate_content(prompt)
-                                    match = re.search(r'\{.*\}', res.text, re.DOT
+    def get_notebook(self, ds_id, ds_name, strategy, columns):
+                model = genai.GenerativeModel(self.model_name)
+                prompt = f"Genera JSON de un NOTEBOOK (.ipynb) para {ds_id}. Solo JSON."
+                try:
+                                res = model.generate_content(prompt)
+                                match = re.search(r'\{.*\}', res.text, re.DOTALL)
+                                return match.group(0)
+                            except:
+            return "{}"
+
+mentor = EliteMentor()
+
+if "step" not in st.session_state: st.session_state.step = 1
+
+with st.sidebar:
+        st.markdown("### MENTOR ESTRATEGICO")
+    if st.button("REINICIAR"):
+                for k in list(st.session_state.keys()): del st.session_state[k]
+                            st.rerun()
+
+if st.session_state.step == 1:
+        st.markdown('<div class="coach-msg">Bienvenido! Buscamos soluciones estructurales para Colombia.</div>', unsafe_allow_html=True)
+    c1, c2, c3 = st.columns([2, 1, 1])
+    q = c1.text_input("Reto Estrategico:")
+    depto = c2.selectbox("Dpto:", ["NACIONAL", "BOGOTA", "ANTIOQUIA", "VALLE"])
+    ciudad = c3.text_input("Ciudad:")
+
+    if st.button("INICIAR DESCUBRIMIENTO", use_container_width=True):
+                if q:
+                                with st.status("Auditando Datos...") as status:
+                                                    query = f"{q} {depto if depto != 'NACIONAL' else ''} {ciudad}"
+                                                    res = requests.get(f"https://www.datos.gov.co/api/catalog/v1?q={query}&limit=5").json()
+                                                    results = []
+                                                    for item in res.get('results', []):
+                                                                            r = item.get('resource', {})
+                                                                            ds_id = r.get('id')
+                                                                            try:
+                                                                                                        cat = requests.get(f"https://api.us.socrata.com/api/catalog/v1?ids={ds_id}", timeout=3).json()
+                                                                                                        rows = cat['results'][0]['resource']['row_count']
+                                                                                                        v_res = requests.get(f"https://www.datos.gov.co/api/views/{ds_id}.json").json()
+                                                                                                        cols = [c['name'] for c in v_res.get('columns', [])]
+                                                                                                    except: rows = 0; cols = []
+                                                                            analysis = mentor.analyze_deep(q, r.get('name'), rows, cols)
+                                                                            results.append({"id": ds_id, "name": r.get('name'), "rows": rows, "entidad": r.get('attribution'), **analysis})
+                                                                        st.session_state.results = results
+                                                    status.update(label="Vision Generada!", state="complete")
+
+                        if "results" in st.session_state:
+                                    for d in st.session_state.results:
+                                                    with st.container():
+                                                                        st.markdown(f"### {d['name']}")
+                                                                        cl, cr = st.columns(2)
+                                                                        cl.info(f"**PROBLEMA:** {d['problema']}")
+                                                                        cr.success(f"**SOLUCION:** {d['solucion']}")
+                                                                        if st.button(f"DESARROLLAR: {d['id']}", key=d['id']):
+                                                                                                st.session_state.selected = d; st.session_state.step = 2; st.rerun()
+
+                        elif st.session_state.step == 2:
+    ds = st.session_state.selected
+    st.markdown(f"## Proyecto: {ds['name']}")
+    if st.button("VOLVER"): st.session_state.step = 1; st.rerun()
+            st.write(ds)
+
+st.markdown("---")
+st.caption("v13.0 - Elite Edition - MinTIC 2026")
