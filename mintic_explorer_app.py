@@ -70,8 +70,8 @@ class EliteMentor:
                     try:
                                     res = model.generate_content(prompt)
                                     match = re.search(r'\{.*\}', res.text, re.DOTALL)
-                                    return json.loads(match.group(0)) if match else self._coach_fallback(ds_name)
-                                except: return self._coach_fallback(ds_name)
+                                                                return json.loads(match.group(0)) if match else self._coach_fallback(ds_name)
+                                                     except: return self._coach_fallback(ds_name)
 
         def _coach_fallback(self, name):
                     return {
@@ -87,8 +87,8 @@ class EliteMentor:
                     try:
                                     res = model.generate_content(prompt)
                                     match = re.search(r'\{.*\}', res.text, re.DOTALL)
-                                    return match.group(0)
-                                except: return "{}"
+                                        return match.group(0)
+                                           except: return "{}"
 
     mentor = EliteMentor()
 
