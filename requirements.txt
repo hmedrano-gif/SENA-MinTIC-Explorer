@@ -2,3 +2,4 @@ streamlit
 pandas
 requests
 sodapy
+google-generativeai
